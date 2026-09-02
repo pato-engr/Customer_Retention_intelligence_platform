@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}Retention Assessment Result{% endblock %}
+
+{% block content %}
+<section class="result-hero result-hero--{{ assessment.risk_level|lower }}">
+  <div>
+    <span class="eyebrow">Assessment #{{ assessment.id }}</span>
+    <h1>{{ assessment.customer_reference }}</h1>
+    <p>{{ assessment.prediction }}</p>
+  </div>
+
+  <div class="score-ring" style="--score: {{ assessment.churn_probability * 100 }};">
+    <strong>{{ "%.1f"|format(assessment.churn_probability * 100) }}%</strong>
+    <span>churn risk</span>
+  </div>
+</section>
+
+<section class="result-grid">
+  <article class="metric-card">
+    <span>Risk level</span>
+    <strong>{{ assessment.risk_level }}</strong>
+    <p>Segment used to prioritise retention attention.</p>
+  </article>
+
+  <article class="metric-card">
+    <span>Retention probability</span>
+    <strong>{{ "%.1f"|format((1 - assessment.churn_probability) * 100) }}%</strong>
+    <p>Complement of the predicted churn probability.</p>
+  </article>
+
+  <article class="metric-card">
+    <span>Monthly revenue at risk</span>
+    <strong>${{ "%.2f"|format(assessment.estimated_monthly_revenue_at_risk) }}</strong>
+    <p>Monthly charges weighted by churn probability.</p>
+  </article>
+</section>
+
+<section class="decision-grid">
+  <article class="decision-card">
+    <span>Primary retention signal</span>
+    <h2>{{ assessment.primary_driver }}</h2>
+    <p>
+      This explanation is generated from transparent business rules around the
+      submitted profile. It supplements, rather than reproduces, the model.
+    </p>
+  </article>
+
+  <article class="decision-card decision-card--action">
+    <span>Recommended next action</span>
+    <h2>{{ assessment.recommended_action }}</h2>
+    <p>
+      Record the intervention and compare outcomes to measure which actions
+      reduce churn most effectively.
+    </p>
+  </article>
+</section>
+
+<div class="page-actions">
+  <a class="button button--secondary" href="{{ url_for('web.home') }}">Assess another customer</a>
+  <a class="button" href="{{ url_for('web.dashboard') }}">Open portfolio dashboard</a>
+</div>
+{% endblock %}

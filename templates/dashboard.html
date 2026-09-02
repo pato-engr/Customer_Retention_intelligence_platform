@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block title %}Retention Portfolio Dashboard{% endblock %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<section class="dashboard-heading">
+  <div>
+    <span class="eyebrow">Retention portfolio</span>
+    <h1>Customer Retention Dashboard</h1>
+    <p>
+      Monitor assessed customers, risk concentration and estimated monthly
+      revenue exposure.
+    </p>
+  </div>
+  <a class="button" href="{{ url_for('web.home') }}">New assessment</a>
+</section>
+
+<section class="dashboard-kpis">
+  <article><span>Total assessments</span><strong>{{ summary.total_assessments }}</strong></article>
+  <article><span>High-risk customers</span><strong>{{ summary.high_risk }}</strong></article>
+  <article><span>Average churn risk</span><strong>{{ "%.1f"|format(summary.average_probability * 100) }}%</strong></article>
+  <article><span>Monthly revenue at risk</span><strong>${{ "%.2f"|format(summary.revenue_at_risk) }}</strong></article>
+</section>
+
+<section class="chart-grid">
+  <article class="chart-card">
+    <header><span>Portfolio segmentation</span><h2>Risk distribution</h2></header>
+    <canvas id="riskChart"></canvas>
+  </article>
+
+  <article class="chart-card">
+    <header><span>Commercial pattern</span><h2>Risk by contract type</h2></header>
+    <canvas id="contractChart"></canvas>
+  </article>
+</section>
+
+<section class="table-card">
+  <header>
+    <div><span>Most recent</span><h2>Customer assessments</h2></div>
+    <small>{{ recent|length }} latest records</small>
+  </header>
+
+  {% if recent %}
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Customer</th>
+          <th>Contract</th>
+          <th>Risk</th>
+          <th>Probability</th>
+          <th>Revenue at risk</th>
+          <th>Assessed</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in recent %}
+        <tr>
+          <td><strong>{{ row.customer_reference }}</strong></td>
+          <td>{{ row.contract }}</td>
+          <td><span class="risk-pill risk-pill--{{ row.risk_level|lower }}">{{ row.risk_level }}</span></td>
+          <td>{{ "%.1f"|format(row.churn_probability * 100) }}%</td>
+          <td>${{ "%.2f"|format(row.estimated_monthly_revenue_at_risk) }}</td>
+          <td>{{ row.created_at[:16].replace("T", " ") }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <h3>No assessments yet</h3>
+    <p>Create the first customer assessment to populate the dashboard.</p>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const riskData = {{ summary.risk_distribution | tojson }};
+  const contracts = {{ summary.contract_performance | tojson }};
+
+  new Chart(document.getElementById("riskChart"), {
+    type: "doughnut",
+    data: {
+      labels: ["High", "Medium", "Low"],
+      datasets: [{
+        data: [riskData.High, riskData.Medium, riskData.Low],
+        backgroundColor: ["#d92d20", "#dc8b00", "#039855"],
+        borderWidth: 0
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { position: "bottom" } }
+    }
+  });
+
+  new Chart(document.getElementById("contractChart"), {
+    type: "bar",
+    data: {
+      labels: contracts.map(item => item.contract),
+      datasets: [{
+        label: "Average churn probability (%)",
+        data: contracts.map(item => item.average_probability),
+        backgroundColor: "#155eef",
+        borderRadius: 8
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: { y: { beginAtZero: true, max: 100 } },
+      plugins: { legend: { display: false } }
+    }
+  });
+</script>
+{% endblock %}
